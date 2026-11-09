@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>NOVA AI — From-Scratch Language Model</title>
+<style>
+:root{color-scheme:dark;--bg:#0b0d14;--panel:#131725;--panel2:#1a2031;--line:#293149;--text:#eef1ff;--muted:#9ba5c0;--accent:#8b72ff;--accent2:#5fcbba}
+*{box-sizing:border-box}body{margin:0;background:radial-gradient(ellipse at 20% 0%,#201b43 0%,transparent 42%),var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,Segoe UI,sans-serif}
+.app{max-width:1000px;margin:auto;padding:22px 16px 40px}.top{display:flex;align-items:center;gap:13px;margin-bottom:22px}.logo{width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,#9b82ff,#5944c7);display:grid;place-items:center;font-size:25px;box-shadow:0 8px 30px #7055db55}.brand{font-size:21px;font-weight:800;letter-spacing:.08em}.sub{color:var(--muted);font-size:12px}.pill{margin-left:auto;border:1px solid #356b60;color:#8ee0c9;background:#10251f;padding:5px 10px;border-radius:99px;font-size:12px}
+.layout{display:grid;grid-template-columns:1.45fr .85fr;gap:16px}.panel{background:#131725ed;border:1px solid var(--line);border-radius:18px;padding:17px;box-shadow:0 12px 40px #0002}.panel h2{font-size:16px;margin:0 0 5px}.muted{color:var(--muted);font-size:13px}.chat{height:440px;overflow:auto;display:flex;flex-direction:column;gap:12px;padding:14px 2px}.msg{max-width:88%;padding:11px 13px;border-radius:15px;white-space:pre-wrap;overflow-wrap:anywhere}.user{align-self:flex-end;background:#5544b5}.bot{align-self:flex-start;background:var(--panel2);border:1px solid #2a3248}.composer{display:flex;gap:8px;margin-top:10px}input,textarea{width:100%;background:#0d111d;border:1px solid var(--line);border-radius:11px;color:var(--text);padding:12px;font:inherit;outline:none}textarea{min-height:150px;resize:vertical}input:focus,textarea:focus{border-color:var(--accent)}button{border:0;border-radius:11px;background:var(--accent);color:white;padding:11px 15px;font-weight:700;font:inherit;cursor:pointer}button:disabled{opacity:.5;cursor:wait}.secondary{background:#293149}.wide{width:100%;margin-top:9px}.stat{display:flex;justify-content:space-between;padding:9px 0;border-bottom:1px solid #252c40;font-size:13px}.stat span:last-child{color:#b9afff;font-variant-numeric:tabular-nums}.bar{height:7px;background:#252c40;border-radius:99px;overflow:hidden;margin:10px 0}.bar>div{height:100%;width:0;background:linear-gradient(90deg,#6e5be7,#62cdb9);transition:width .2s}.notice{border:1px solid #6b5729;background:#282214;color:#e8d49b;padding:11px;border-radius:12px;font-size:12px;margin-top:13px}.status{min-height:20px;color:var(--accent2);font-size:12px;margin-top:8px}.tiny{font-size:11px;color:var(--muted)}.section{margin-top:16px}.row{display:flex;gap:8px;flex-wrap:wrap}.row button{flex:1}@media(max-width:760px){.layout{grid-template-columns:1fr}.chat{height:360px}.pill{font-size:10px}}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top"><div class="logo">✦</div><div><div class="brand">NOVA AI</div><div class="sub">A tiny language model trained in your browser</div></div><div class="pill">NO API • NO CLOUD</div></header>
+  <div class="layout">
+    <section class="panel">
+      <h2>Chat with NOVA</h2><div class="muted">NOVA generates text using its own locally trained neural network.</div>
+      <div class="chat" id="chat"><div class="msg bot">Hi! I'm NOVA, an experimental language model. Train me with text in the panel, then see what I learn. I'm a tiny prototype, so my replies may be rough or nonsensical.</div></div>
+      <div class="composer"><input id="prompt" placeholder="Message NOVA…" autocomplete="off"><button id="send">Send</button></div>
+      <div class="tiny">Enter to send • Replies are generated locally on this device.</div>
+    </section>
+    <aside>
+      <section class="panel">
+        <h2>Model status</h2><div class="stat"><span>Architecture</span><span>Character RNN</span></div><div class="stat"><span>Hidden units</span><span>32</span></div><div class="stat"><span>Vocabulary</span><span id="vocab">—</span></div><div class="stat"><span>Training steps</span><span id="steps">0</span></div><div class="stat"><span>Training text</span><span id="chars">0 chars</span></div>
+        <div class="bar"><div id="progress"></div></div><div class="status" id="status">Ready. Train the model to begin.</div>
+      </section>
+      <section class="panel section">
+        <h2>Train NOVA</h2><p class="muted">Add your own examples, explanations, stories, or conversations. Training changes the model's weights in this browser.</p>
+        <textarea id="data" spellcheck="false">hello there. hello! how are you? i am nova, a small language model. i can generate text based on patterns i learn from examples.
+what is your name? my name is nova.
+what can you do? i can practice generating text, learn patterns, and respond with experimental text.
+thank you. you're welcome!
+good morning. good morning! how can i help?
+the sun is a star. the earth orbits the sun.
+water freezes into ice when it gets cold enough.
+a computer follows instructions and processes information.
+learning takes practice. training adjusts the model so it predicts text more accurately.
+i like building games, robots, websites, and creative projects.
+</textarea>
+        <div class="row"><button class="wide" id="train">Train model</button><button class="secondary wide" id="reset">Reset model</button></div>
+        <div class="tiny" style="margin-top:8px">Training runs on your device. Larger text and more training take longer, especially on phones.</div>
+      </section>
+      <section class="panel section">
+        <h2>Model files</h2><div class="row"><button class="secondary" id="download">Export model</button><button class="secondary" id="uploadBtn">Import model</button><input id="upload" type="file" accept="application/json" hidden></div><div class="status" id="fileStatus"></div>
+      </section>
+    </aside>
+  </div>
+  <div class="notice"><b>Honest limitation:</b> this is a real, trainable neural language-model experiment, not a ChatGPT-level assistant. It has only 32 hidden units and learns from the text you provide. It does not automatically know facts, browse the internet, or understand every question. Building a broadly capable model requires much larger datasets, compute, and evaluation.</div>
+</div>
+<script>
+(() => {
+'use strict';
+const H=32, LR=.035, SEQ=48;
+const chars=Array.from("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 .,!?'-:\n;()\"/");
+let V=chars.length, map=new Map(chars.map((c,i)=>[c,i]));
+const rand=()=>((Math.random()-.5)*.12);
+const zeros=(n)=>new Float32Array(n);
+const mat=(r,c)=>Array.from({length:r},()=>Float32Array.from({length:c},rand));
+let model, steps=0, trainedChars=0, busy=false;
+function fresh(){return {Wxh:mat(H,V),Whh:mat(H,H),Why:mat(V,H),bh:zeros(H),by:zeros(V)}}
+model=fresh();
+const $=id=>document.getElementById(id);
+function update(){ $('vocab').textContent=V+' chars';$('steps').textContent=steps.toLocaleString();$('chars').textContent=trainedChars.toLocaleString()+' chars'; }
+function softmax(a){let m=-Infinity;for(let x of a)m=Math.max(m,x);let e=a.map(x=>Math.exp(Math.max(-30,x-m)));let s=e.reduce((p,x)=>p+x,0)||1;return e.map(x=>x/s)}
+function forward(x,hprev){let h=zeros(H);for(let j=0;j<H;j++){let s=model.bh[j];for(let i=0;i<V;i++)s+=model.Wxh[j][i]*x[i];for(let k=0;k<H;k++)s+=model.Whh[j][k]*hprev[k];h[j]=Math.tanh(s)}let o=zeros(V);for(let i=0;i<V;i++){let s=model.by[i];for(let j=0;j<H;j++)s+=model.Why[i][j]*h[j];o[i]=s}return {h,p:softmax(o)}}
+function onehot(idx){let x=zeros(V);x[idx]=1;return x}
+function trainChunk(text){
+ let ids=Array.from(text,c=>map.has(c)?map.get(c):map.get(' ')).filter(x=>x!==undefined);
+ if(ids.length<3)return 0;
+ let hs=[zeros(H)], xs=[], ps=[], loss=0;
+ for(let t=0;t<Math.min(SEQ,ids.length-1);t++){let x=onehot(ids[t]),f=forward(x,hs[t]);xs.push(x);hs.push(f.h);ps.push(f.p);loss-=Math.log(Math.max(1e-9,f.p[ids[t+1]]))}
+ let dWxh=Array.from({length:H},()=>zeros(V)),dWhh=Array.from({length:H},()=>zeros(H)),dWhy=Array.from({length:V},()=>zeros(H)),dbh=zeros(H),dby=zeros(V),dhnext=zeros(H);
+ for(let t=ps.length-1;t>=0;t--){
+   let dy=Float32Array.from(ps[t]);dy[ids[t+1]]-=1;
+   for(let i=0;i<V;i++){dby[i]+=dy[i];for(let j=0;j<H;j++)dWhy[i][j]+=dy[i]*hs[t+1][j]}
+   let dh=Float32Array.from(dhnext);
+   for(let j=0;j<H;j++)for(let i=0;i<V;i++)dh[j]+=model.Why[i][j]*dy[i];
+   let dhraw=zeros(H);
+   for(let j=0;j<H;j++){dhraw[j]=(1-hs[t+1][j]*hs[t+1][j])*dh[j];dbh[j]+=dhraw[j];for(let i=0;i<V;i++)dWxh[j][i]+=dhraw[j]*xs[t][i];for(let k=0;k<H;k++)dWhh[j][k]+=dhraw[j]*hs[t][k]}
+   dhnext=zeros(H);for(let k=0;k<H;k++)for(let j=0;j<H;j++)dhnext[k]+=model.Whh[j][k]*dhraw[j];
+ }
+ const clip=g=>Math.max(-5,Math.min(5,g)), rate=LR/ps.length;
+ for(let j=0;j<H;j++){model.bh[j]-=rate*clip(dbh[j]);for(let i=0;i<V;i++)model.Wxh[j][i]-=rate*clip(dWxh[j][i]);for(let k=0;k<H;k++)model.Whh[j][k]-=rate*clip(dWhh[j][k])}
+ for(let i=0;i<V;i++){model.by[i]-=rate*clip(dby[i]);for(let j=0;j<H;j++)model.Why[i][j]-=rate*clip(dWhy[i][j])}
+ return loss/ps.length;
+}
+function addMessage(text,who){let d=document.createElement('div');d.className='msg '+who;d.textContent=text;$('chat').appendChild(d);$('chat').scrollTop=$('chat').scrollHeight}
+function generate(prompt,max=260){
+ let h=zeros(H),last=map.get(' '),ids=Array.from(prompt).map(c=>map.has(c)?map.get(c):map.get(' '));
+ // Warm up hidden state with the complete prompt.
+ for(let id of ids){let f=forward(onehot(id),h);h=f.h;last=id}
+ let out='',temperature=.85;
+ for(let n=0;n<max;n++){let f=forward(onehot(last),h);h=f.h;let p=f.p.map(x=>Math.pow(x,1/temperature));let sum=p.reduce((a,b)=>a+b,0);let r=Math.random()*sum,idx=0;for(;idx<p.length-1;idx++){r-=p[idx];if(r<=0)break}
+ last=idx;let c=chars[idx];out+=c;if(c==='\n'&&out.length>90)break;}
+ return out.trim()||"I don't have enough learned patterns to answer yet. Try training me with more examples.";
+}
+async function train(){
+ if(busy)return;let text=$('data').value;if(text.trim().length<20){$('status').textContent='Add at least 20 characters of training text.';return}
+ busy=true;$('train').disabled=true;$('status').textContent='Training…';trainedChars+=text.length;
+ let chunks=[];for(let i=0;i<text.length-1;i+=SEQ)chunks.push(text.slice(i,i+SEQ+1));
+ let total=chunks.length*12,done=0,loss=0;
+ for(let epoch=0;epoch<12;epoch++){for(let chunk of chunks){loss+=trainChunk(chunk);done++;if(done%4===0){$('progress').style.width=(done/total*100)+'%';$('status').textContent=`Training ${Math.round(done/total*100)}% • loss ${(loss/done).toFixed(3)}`;await new Promise(r=>setTimeout(r,0));}}}
+ steps+=done;update();$('progress').style.width='100%';$('status').textContent=`Training complete • average loss ${(loss/done).toFixed(3)}`;busy=false;$('train').disabled=false;
+}
+function send(){let p=$('prompt').value.trim();if(!p||busy)return;$('prompt').value='';addMessage(p,'user');let reply=generate(p);addMessage(reply,'bot')}
+$('send').addEventListener('click',send);$('prompt').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();send()}});
+$('train').addEventListener('click',train);
+$('reset').addEventListener('click',()=>{if(busy)return;model=fresh();steps=0;trainedChars=0;update();$('progress').style.width='0%';$('status').textContent='Model reset. Train it again.'});
+$('download').addEventListener('click',()=>{let data={format:'NOVA-RNN-1',hidden:H,chars,steps,trainedChars,model:Object.fromEntries(Object.entries(model).map(([k,v])=>[k,Array.isArray(v)?v.map(a=>Array.from(a)):Array.from(v)]))};let a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data)],{type:'application/json'}));a.download='nova-model.json';a.click();URL.revokeObjectURL(a.href);$('fileStatus').textContent='Model exported.'});
+$('uploadBtn').addEventListener('click',()=>$('upload').click());
+$('upload').addEventListener('change',async e=>{try{let d=JSON.parse(await e.target.files[0].text());if(d.format!=='NOVA-RNN-1'||d.hidden!==H||d.chars.join('')!==chars.join(''))throw Error('Incompatible model file');for(let k of Object.keys(model)){let v=d.model[k];model[k]=Array.isArray(v)?v.map(a=>Float32Array.from(a)):Float32Array.from(v)}steps=d.steps||0;trainedChars=d.trainedChars||0;update();$('fileStatus').textContent='Model imported successfully.'}catch(err){$('fileStatus').textContent='Could not import: '+err.message}});
+update();
+})();
+</script>
+</body>
+</html>
